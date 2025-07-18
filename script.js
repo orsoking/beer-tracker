@@ -30,7 +30,6 @@ const elements = {
     
     // Navigation
     dashboardBtn: document.getElementById('dashboardBtn'),
-    addBeerBtn: document.getElementById('addBeerBtn'),
     logoutBtn: document.getElementById('logoutBtn'),
     
     // Pages
@@ -114,7 +113,6 @@ function setupEventListeners() {
     
     // Navigation event listeners
     elements.dashboardBtn.addEventListener('click', () => showPage('dashboard'));
-    elements.addBeerBtn.addEventListener('click', () => showPage('addBeer'));
     elements.logoutBtn.addEventListener('click', handleLogout);
     
     // Form event listeners
@@ -813,7 +811,7 @@ function showPage(pageName) {
             break;
         case 'addBeer':
             elements.addBeerPage.classList.remove('hidden');
-            elements.addBeerBtn.classList.add('active');
+            // Non c'è più pulsante addBeer nell'header
             resetAddBeerForm();
             break;
         case 'editBeer':

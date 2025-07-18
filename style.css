@@ -555,8 +555,9 @@ body {
 }
 
 .nav-btn.active {
-    background: var(--beer-gold);
-    color: var(--white);
+    background: var(--light-gray);
+    color: var(--deep-blue);
+    font-weight: 600;
 }
 
 /* Pagina di autenticazione */

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beer Tracker - Il tuo registro birre personale</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Schermata di caricamento -->
+    <div id="loading" class="loading-screen">
+        <div class="beer-loading">
+            <i class="fas fa-beer"></i>
+            <p>Caricamento...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header id="header" class="header hidden">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-beer"></i>
+                <h1>Beer Tracker</h1>
+            </div>
+            <nav class="nav-menu">
+                <button id="dashboardBtn" class="nav-btn active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button id="addBeerBtn" class="nav-btn">
+                    <i class="fas fa-plus"></i>
+                    <span>Aggiungi</span>
+                </button>
+                <button id="logoutBtn" class="nav-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Pagina di Login/Registrazione -->
+    <div id="authPage" class="auth-page">
+        <div class="auth-container">
+            <div class="auth-header">
+                <i class="fas fa-beer"></i>
+                <h1>Beer Tracker</h1>
+                <p>Il tuo registro birre personale</p>
+            </div>
+
+            <!-- Form di Login -->
+            <div id="loginForm" class="auth-form">
+                <h2>Accedi</h2>
+                <form id="loginFormElement">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Accedi</button>
+                </form>
+                <p class="auth-switch">
+                    Non hai un account? <a href="#" id="showRegister">Registrati</a>
+                </p>
+            </div>
+
+            <!-- Form di Registrazione -->
+            <div id="registerForm" class="auth-form hidden">
+                <h2>Registrati</h2>
+                <form id="registerFormElement">
+                    <div class="form-group">
+                        <label for="registerFullName">Nome completo</label>
+                        <input type="text" id="registerFullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerUsername">Username</label>
+                        <input type="text" id="registerUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Registrati</button>
+                </form>
+                <p class="auth-switch">
+                    Hai già un account? <a href="#" id="showLogin">Accedi</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <main id="mainApp" class="main-app hidden">
+        <!-- Dashboard -->
+        <div id="dashboardPage" class="page">
+            <div class="container">
+                <div class="welcome-section">
+                    <h2>Benvenuto, <span id="userName"></span>!</h2>
+                    <p>Ecco le tue statistiche sulle birre</p>
+                </div>
+
+                <!-- Statistiche -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-beer"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalBeers">0</h3>
+                            <p>Birre Bevute</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="avgRating">0</h3>
+                            <p>Voto Medio</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="favoriteStyle">-</h3>
+                            <p>Stile Preferito</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-euro-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalSpent">€0</h3>
+                            <p>Speso Totale</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista Birre -->
+                <div class="beers-section">
+                    <div class="section-header">
+                        <h3>Le tue birre</h3>
+                        <div class="filters">
+                            <select id="styleFilter">
+                                <option value="">Tutti gli stili</option>
+                                <option value="IPA">IPA</option>
+                                <option value="Lager">Lager</option>
+                                <option value="Stout">Stout</option>
+                                <option value="Pilsner">Pilsner</option>
+                                <option value="Wheat">Wheat</option>
+                                <option value="Porter">Porter</option>
+                                <option value="Pale Ale">Pale Ale</option>
+                                <option value="Saison">Saison</option>
+                                <option value="Tripel">Tripel</option>
+                                <option value="Weizen">Weizen</option>
+                                <option value="Altro">Altro</option>
+                            </select>
+                            <select id="sortBy">
+                                <option value="created_at">Data aggiunta</option>
+                                <option value="consumption_date">Data consumo</option>
+                                <option value="rating_overall">Voto</option>
+                                <option value="name">Nome</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="beersList" class="beers-grid">
+                        <!-- Le birre verranno inserite qui dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagina Aggiungi Birra -->
+        <div id="addBeerPage" class="page hidden">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Aggiungi una nuova birra</h2>
+                    <p>Registra la tua ultima degustazione</p>
+                </div>
+
+                <form id="addBeerForm" class="beer-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="beerName">Nome birra *</label>
+                            <input type="text" id="beerName" required placeholder="Es: Guinness Draught">
+                        </div>
+                        <div class="form-group">
+                            <label for="beerBrewery">Birrificio *</label>
+                            <input type="text" id="beerBrewery" required placeholder="Es: Guinness">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="beerStyle">Stile *</label>
+                            <select id="beerStyle" required>
+                                <option value="">Seleziona stile</option>
+                                <option value="IPA">IPA (India Pale Ale)</option>
+                                <option value="Lager">Lager</option>
+                                <option value="Stout">Stout</option>
+                                <option value="Pilsner">Pilsner</option>
+                                <option value="Wheat">Wheat Beer</option>
+                                <option value="Porter">Porter</option>
+                                <option value="Pale Ale">Pale Ale</option>
+                                <option value="Saison">Saison</option>
+                                <option value="Tripel">Tripel</option>
+                                <option value="Weizen">Weizen</option>
+                                <option value="Altro">Altro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="beerAlcohol">Gradazione (%)</label>
+                            <input type="number" id="beerAlcohol" min="0" max="20" step="0.1" placeholder="Es: 4.2">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="beerDate">Data consumo</label>
+                            <input type="date" id="beerDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="beerLocation">Luogo</label>
+                            <input type="text" id="beerLocation" placeholder="Es: Pub O'Malley's, Roma">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="beerPrice">Prezzo (€)</label>
+                            <input type="number" id="beerPrice" min="0" step="0.01" placeholder="Es: 5.50">
+                        </div>
+                        <div class="form-group">
+                            <label for="beerPhoto">Foto</label>
+                            <input type="file" id="beerPhoto" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="beerNotes">Note</label>
+                        <textarea id="beerNotes" rows="3" placeholder="Descrivi il sapore, l'aroma, l'occasione..."></textarea>
+                    </div>
+
+                    <!-- Valutazioni -->
+                    <div class="ratings-section">
+                        <h3>Valutazioni</h3>
+                        <p style="text-align: center; color: var(--gray-dark); margin-bottom: 20px;">
+                            Clicca sulle stelle per valutare (1-5 stelle)
+                        </p>
+                        <div class="rating-groups">
+                            <div class="rating-group">
+                                <label>Aspetto</label>
+                                <div class="star-rating" data-rating="rating_appearance">
+                                    <i class="fas fa-star" data-value="1"></i>
+                                    <i class="fas fa-star" data-value="2"></i>
+                                    <i class="fas fa-star" data-value="3"></i>
+                                    <i class="fas fa-star" data-value="4"></i>
+                                    <i class="fas fa-star" data-value="5"></i>
+                                </div>
+                            </div>
+                            <div class="rating-group">
+                                <label>Aroma</label>
+                                <div class="star-rating" data-rating="rating_aroma">
+                                    <i class="fas fa-star" data-value="1"></i>
+                                    <i class="fas fa-star" data-value="2"></i>
+                                    <i class="fas fa-star" data-value="3"></i>
+                                    <i class="fas fa-star" data-value="4"></i>
+                                    <i class="fas fa-star" data-value="5"></i>
+                                </div>
+                            </div>
+                            <div class="rating-group">
+                                <label>Sapore</label>
+                                <div class="star-rating" data-rating="rating_taste">
+                                    <i class="fas fa-star" data-value="1"></i>
+                                    <i class="fas fa-star" data-value="2"></i>
+                                    <i class="fas fa-star" data-value="3"></i>
+                                    <i class="fas fa-star" data-value="4"></i>
+                                    <i class="fas fa-star" data-value="5"></i>
+                                </div>
+                            </div>
+                            <div class="rating-group">
+                                <label>Bevibilità</label>
+                                <div class="star-rating" data-rating="rating_drinkability">
+                                    <i class="fas fa-star" data-value="1"></i>
+                                    <i class="fas fa-star" data-value="2"></i>
+                                    <i class="fas fa-star" data-value="3"></i>
+                                    <i class="fas fa-star" data-value="4"></i>
+                                    <i class="fas fa-star" data-value="5"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="cancelAddBeer" class="btn btn-secondary">
+                            <i class="fas fa-times"></i>
+                            Annulla
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Aggiungi birra
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Pagina Dettagli Birra -->
+        <div id="beerDetailPage" class="page hidden">
+            <div class="container">
+                <div class="beer-detail">
+                    <!-- Contenuto dettagli birra verrà inserito dinamicamente -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal di conferma eliminazione -->
+    <div id="deleteModal" class="modal hidden">
+        <div class="modal-content">
+            <h3><i class="fas fa-exclamation-triangle" style="color: var(--warning); margin-right: 8px;"></i>Conferma eliminazione</h3>
+            <p>Sei sicuro di voler eliminare questa birra? L'azione non può essere annullata.</p>
+            <div class="modal-actions">
+                <button id="cancelDelete" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Annulla
+                </button>
+                <button id="confirmDelete" class="btn btn-danger">
+                    <i class="fas fa-trash"></i>
+                    Elimina
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 40px 20px; color: var(--gray-dark); background: var(--white); margin-top: 40px;">
+        <p>🍺 Beer Tracker - Creato con passione per gli amanti della birra</p>
+        <p style="font-size: 14px; margin-top: 8px;">
+            Bevi responsabilmente • 
+            <a href="https://github.com/tuousername/beer-tracker" style="color: var(--brown);">GitHub</a>
+        </p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

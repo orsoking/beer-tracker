@@ -283,17 +283,23 @@ async function handleAddBeer(e) {
         consumption_date: document.getElementById('beerDate').value || null,
         location: document.getElementById('beerLocation').value || null,
         notes: document.getElementById('beerNotes').value || null,
+        // SOLO per aggiunta - proviamo con rating singolo
         rating_overall: ratings.rating_overall || null,
         user_id: currentUser.id
     };
     
     try {
+        console.log('Aggiunta birra:', formData);
+        
         const { data, error } = await supabase
             .from('beers')
             .insert([formData])
             .select();
         
-        if (error) throw error;
+        if (error) {
+            console.error('Errore aggiunta:', error);
+            throw error;
+        }
         
         showToast('Birra aggiunta con successo!', 'success');
         resetAddBeerForm();
@@ -302,6 +308,7 @@ async function handleAddBeer(e) {
         
     } catch (error) {
         console.error('Errore aggiunta birra:', error);
+        console.error('Dettagli:', JSON.stringify(error, null, 2));
         showToast('Errore durante l\'aggiunta della birra', 'error');
     }
 }
@@ -354,6 +361,7 @@ async function handleEditBeer(e) {
     }
     
     try {
+        // RIMUOVO rating_overall per evitare errore 400
         const formData = {
             name: document.getElementById('editBeerName').value.trim(),
             brewery: document.getElementById('editBeerBrewery').value.trim(),
@@ -361,8 +369,8 @@ async function handleEditBeer(e) {
             alcohol_percentage: parseFloat(document.getElementById('editBeerAlcohol').value) || null,
             consumption_date: document.getElementById('editBeerDate').value || null,
             location: document.getElementById('editBeerLocation').value?.trim() || null,
-            notes: document.getElementById('editBeerNotes').value?.trim() || null,
-            rating_overall: ratings.edit_rating_overall || null
+            notes: document.getElementById('editBeerNotes').value?.trim() || null
+            // RIMOSSO: rating_overall - problema con colonna calcolata
         };
         
         // Validazione base
@@ -371,17 +379,17 @@ async function handleEditBeer(e) {
             return;
         }
         
-        console.log('Aggiornamento birra:', editingBeerId, formData);
+        console.log('Aggiornamento birra senza rating:', editingBeerId, formData);
         
         const { data, error } = await supabase
             .from('beers')
             .update(formData)
             .eq('id', editingBeerId)
-            .eq('user_id', currentUser.id) // Sicurezza extra
+            .eq('user_id', currentUser.id)
             .select();
         
         if (error) {
-            console.error('Errore Supabase:', error);
+            console.error('Errore Supabase dettagliato:', error);
             throw error;
         }
         
@@ -395,17 +403,15 @@ async function handleEditBeer(e) {
         await loadBeers();
         
     } catch (error) {
-        console.error('Errore modifica birra:', error);
+        console.error('Errore modifica birra completo:', error);
+        console.error('Dettagli errore:', JSON.stringify(error, null, 2));
         
-        // Messaggi di errore più specifici
         let errorMessage = 'Errore durante la modifica della birra';
         
-        if (error.message?.includes('permission')) {
+        if (error.code === '42703') {
+            errorMessage = 'Errore schema database - contatta supporto';
+        } else if (error.message?.includes('permission')) {
             errorMessage = 'Non hai i permessi per modificare questa birra';
-        } else if (error.message?.includes('not found')) {
-            errorMessage = 'Birra non trovata';
-        } else if (error.code === 'PGRST301') {
-            errorMessage = 'Errore di autenticazione - riprova il login';
         }
         
         showToast(errorMessage, 'error');

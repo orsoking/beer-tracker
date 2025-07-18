@@ -6,30 +6,36 @@
 }
 
 :root {
-    --gold: #FFD700;
-    --amber: #FFBF00;
-    --brown: #8B4513;
-    --dark-brown: #5D2F0A;
-    --cream: #FFF8DC;
+    /* Palette principale a 3 colori */
+    --beer-gold: #F4A853;          /* Giallo birra principale */
+    --deep-blue: #2C3E50;          /* Blu scuro per testi e accenti */
+    --light-gray: #F8F9FA;         /* Grigio chiaro neutro */
+    
+    /* Varianti dei colori principali */
+    --beer-gold-light: #F6B666;    /* Variante più chiara del giallo */
+    --beer-gold-dark: #E09540;     /* Variante più scura del giallo */
+    --deep-blue-light: #34495E;    /* Variante più chiara del blu */
+    --gray-medium: #DEE2E6;        /* Grigio medio per bordi */
+    --gray-dark: #6C757D;          /* Grigio scuro per testi secondari */
+    
+    /* Colori sistema (mantenuti per funzionalità) */
     --white: #FFFFFF;
-    --gray-light: #F5F5F5;
-    --gray-medium: #CCCCCC;
-    --gray-dark: #666666;
-    --black: #333333;
     --success: #28a745;
     --warning: #ffc107;
     --danger: #dc3545;
     --info: #17a2b8;
-    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-hover: 0 8px 15px rgba(0, 0, 0, 0.15);
+    
+    /* Shadows e effetti */
+    --shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+    --shadow-hover: 0 4px 16px rgba(44, 62, 80, 0.15);
     --radius: 12px;
     --transition: all 0.3s ease;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, var(--cream) 0%, var(--amber) 100%);
-    color: var(--black);
+    background: var(--light-gray);
+    color: var(--deep-blue);
     line-height: 1.6;
     min-height: 100vh;
 }
@@ -62,22 +68,26 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--gold) 0%, var(--amber) 100%);
-    color: var(--dark-brown);
+    background: var(--beer-gold);
+    color: var(--white);
+    font-weight: 600;
 }
 
 .btn-primary:hover {
+    background: var(--beer-gold-dark);
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
 }
 
 .btn-secondary {
-    background: var(--gray-light);
-    color: var(--gray-dark);
+    background: var(--light-gray);
+    color: var(--deep-blue);
+    border: 2px solid var(--gray-medium);
 }
 
 .btn-secondary:hover {
     background: var(--gray-medium);
+    border-color: var(--beer-gold);
 }
 
 .btn-danger {
@@ -506,17 +516,18 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    color: var(--brown);
+    color: var(--deep-blue);
 }
 
 .nav-brand i {
     font-size: 32px;
-    color: var(--gold);
+    color: var(--beer-gold);
 }
 
 .nav-brand h1 {
     font-size: 24px;
     font-weight: 700;
+    color: var(--deep-blue);
 }
 
 .nav-menu {
@@ -534,17 +545,18 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--gray-dark);
+    color: var(--deep-blue);
+    font-weight: 500;
 }
 
 .nav-btn:hover {
-    background: var(--gray-light);
-    color: var(--brown);
+    background: var(--light-gray);
+    color: var(--beer-gold);
 }
 
 .nav-btn.active {
-    background: var(--gold);
-    color: var(--dark-brown);
+    background: var(--beer-gold);
+    color: var(--white);
 }
 
 /* Pagina di autenticazione */

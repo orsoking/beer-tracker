@@ -5,11 +5,12 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 let currentUser = null;
 let currentBeers = [];
 let currentBeerToDelete = null;
+let currentFilterType = 'all';
+let isEditMode = false;
+let editingBeerId = null;
 let ratings = {
-    rating_appearance: 0,
-    rating_aroma: 0,
-    rating_taste: 0,
-    rating_drinkability: 0
+    rating_overall: 0,
+    edit_rating_overall: 0
 };
 
 // Elementi DOM
@@ -35,21 +36,30 @@ const elements = {
     // Pages
     dashboardPage: document.getElementById('dashboardPage'),
     addBeerPage: document.getElementById('addBeerPage'),
+    editBeerPage: document.getElementById('editBeerPage'),
+    filteredBeersPage: document.getElementById('filteredBeersPage'),
     beerDetailPage: document.getElementById('beerDetailPage'),
     
     // Dashboard elements
-    userName: document.getElementById('userName'),
     totalBeers: document.getElementById('totalBeers'),
     avgRating: document.getElementById('avgRating'),
     favoriteStyle: document.getElementById('favoriteStyle'),
-    totalSpent: document.getElementById('totalSpent'),
-    beersList: document.getElementById('beersList'),
-    styleFilter: document.getElementById('styleFilter'),
-    sortBy: document.getElementById('sortBy'),
+    favoriteBrewery: document.getElementById('favoriteBrewery'),
+    
+    // Filtered page elements
+    filteredBeersList: document.getElementById('filteredBeersList'),
+    filteredStyleFilter: document.getElementById('filteredStyleFilter'),
+    filteredSortBy: document.getElementById('filteredSortBy'),
+    filteredPageTitle: document.getElementById('filteredPageTitle'),
+    filteredSectionTitle: document.getElementById('filteredSectionTitle'),
     
     // Add beer form
     addBeerForm: document.getElementById('addBeerForm'),
     cancelAddBeer: document.getElementById('cancelAddBeer'),
+    
+    // Edit beer form
+    editBeerForm: document.getElementById('editBeerForm'),
+    cancelEditBeer: document.getElementById('cancelEditBeer'),
     
     // Modal and toast
     deleteModal: document.getElementById('deleteModal'),
@@ -112,9 +122,12 @@ function setupEventListeners() {
     elements.addBeerForm.addEventListener('submit', handleAddBeer);
     elements.cancelAddBeer.addEventListener('click', () => showPage('dashboard'));
     
-    // Filter event listeners
-    elements.styleFilter.addEventListener('change', filterAndSortBeers);
-    elements.sortBy.addEventListener('change', filterAndSortBeers);
+    elements.editBeerForm.addEventListener('submit', handleEditBeer);
+    elements.cancelEditBeer.addEventListener('click', () => showPage('dashboard'));
+    
+    // Filter event listeners for filtered page
+    elements.filteredStyleFilter.addEventListener('change', filterAndSortFilteredBeers);
+    elements.filteredSortBy.addEventListener('change', filterAndSortFilteredBeers);
     
     // Modal event listeners
     elements.cancelDelete.addEventListener('click', hideDeleteModal);
@@ -279,15 +292,11 @@ async function loadUserProfile() {
         
         if (error && error.code !== 'PGRST116') throw error;
         
-        if (data) {
-            elements.userName.textContent = data.full_name || data.username || 'Utente';
-        } else {
-            elements.userName.textContent = currentUser.email;
-        }
+        // Non mostriamo più il nome utente nella home
+        // La home è ora più pulita senza il messaggio di benvenuto
         
     } catch (error) {
         console.error('Errore caricamento profilo:', error);
-        elements.userName.textContent = currentUser.email;
     }
 }
 
@@ -302,12 +311,8 @@ async function handleAddBeer(e) {
         alcohol_percentage: parseFloat(document.getElementById('beerAlcohol').value) || null,
         consumption_date: document.getElementById('beerDate').value || null,
         location: document.getElementById('beerLocation').value || null,
-        price: parseFloat(document.getElementById('beerPrice').value) || null,
         notes: document.getElementById('beerNotes').value || null,
-        rating_appearance: ratings.rating_appearance || null,
-        rating_aroma: ratings.rating_aroma || null,
-        rating_taste: ratings.rating_taste || null,
-        rating_drinkability: ratings.rating_drinkability || null,
+        rating_overall: ratings.rating_overall || null,
         user_id: currentUser.id
     };
     
@@ -330,7 +335,81 @@ async function handleAddBeer(e) {
     }
 }
 
-async function loadBeers() {
+// Gestione modifica birra
+async function editBeer(beerId) {
+    const beer = currentBeers.find(b => b.id === beerId);
+    if (!beer) return;
+    
+    isEditMode = true;
+    editingBeerId = beerId;
+    
+    // Popola il form di modifica
+    document.getElementById('editBeerId').value = beer.id;
+    document.getElementById('editBeerName').value = beer.name || '';
+    document.getElementById('editBeerBrewery').value = beer.brewery || '';
+    document.getElementById('editBeerStyle').value = beer.style || '';
+    document.getElementById('editBeerAlcohol').value = beer.alcohol_percentage || '';
+    document.getElementById('editBeerDate').value = beer.consumption_date || '';
+    document.getElementById('editBeerLocation').value = beer.location || '';
+    document.getElementById('editBeerNotes').value = beer.notes || '';
+    
+    // Imposta la valutazione
+    ratings.edit_rating_overall = beer.rating_overall || 0;
+    updateStarDisplay('edit_rating_overall', ratings.edit_rating_overall);
+    
+    showPage('editBeer');
+}
+
+async function handleEditBeer(e) {
+    e.preventDefault();
+    
+    if (!editingBeerId) return;
+    
+    const formData = {
+        name: document.getElementById('editBeerName').value,
+        brewery: document.getElementById('editBeerBrewery').value,
+        style: document.getElementById('editBeerStyle').value,
+        alcohol_percentage: parseFloat(document.getElementById('editBeerAlcohol').value) || null,
+        consumption_date: document.getElementById('editBeerDate').value || null,
+        location: document.getElementById('editBeerLocation').value || null,
+        notes: document.getElementById('editBeerNotes').value || null,
+        rating_overall: ratings.edit_rating_overall || null
+    };
+    
+    try {
+        const { data, error } = await supabase
+            .from('beers')
+            .update(formData)
+            .eq('id', editingBeerId)
+            .select();
+        
+        if (error) throw error;
+        
+        showToast('Birra modificata con successo!', 'success');
+        resetEditMode();
+        showPage('dashboard');
+        await loadBeers();
+        
+    } catch (error) {
+        console.error('Errore modifica birra:', error);
+        showToast('Errore durante la modifica della birra', 'error');
+    }
+}
+
+function resetEditMode() {
+    isEditMode = false;
+    editingBeerId = null;
+    ratings.edit_rating_overall = 0;
+    
+    // Reset del form
+    document.getElementById('editBeerForm').reset();
+    
+    // Reset stelle
+    document.querySelectorAll('[data-rating="edit_rating_overall"] i').forEach(star => {
+        star.classList.remove('active');
+        star.style.color = 'var(--gray-medium)';
+    });
+}
     if (!currentUser) return;
     
     try {
@@ -434,25 +513,29 @@ function updateStatistics() {
         : 0;
     
     const styleCount = {};
-    let totalSpent = 0;
+    const breweryCount = {};
     
     currentBeers.forEach(beer => {
         if (beer.style) {
             styleCount[beer.style] = (styleCount[beer.style] || 0) + 1;
         }
-        if (beer.price) {
-            totalSpent += beer.price;
+        if (beer.brewery) {
+            breweryCount[beer.brewery] = (breweryCount[beer.brewery] || 0) + 1;
         }
     });
     
     const favoriteStyle = Object.keys(styleCount).length > 0 
         ? Object.keys(styleCount).reduce((a, b) => styleCount[a] > styleCount[b] ? a : b)
         : '-';
+        
+    const favoriteBrewery = Object.keys(breweryCount).length > 0 
+        ? Object.keys(breweryCount).reduce((a, b) => breweryCount[a] > breweryCount[b] ? a : b)
+        : '-';
     
     elements.totalBeers.textContent = totalBeers;
     elements.avgRating.textContent = avgRating.toFixed(1);
     elements.favoriteStyle.textContent = favoriteStyle;
-    elements.totalSpent.textContent = `€${totalSpent.toFixed(2)}`;
+    elements.favoriteBrewery.textContent = favoriteBrewery;
 }
 
 async function showBeerDetail(beerId) {
@@ -632,15 +715,10 @@ function resetAddBeerForm() {
     elements.addBeerForm.reset();
     
     // Reset ratings
-    ratings = {
-        rating_appearance: 0,
-        rating_aroma: 0,
-        rating_taste: 0,
-        rating_drinkability: 0
-    };
+    ratings.rating_overall = 0;
     
     // Reset star display
-    document.querySelectorAll('.star-rating i').forEach(star => {
+    document.querySelectorAll('[data-rating="rating_overall"] i').forEach(star => {
         star.classList.remove('active');
         star.style.color = 'var(--gray-medium)';
     });
@@ -650,11 +728,27 @@ function resetAddBeerForm() {
     document.getElementById('beerDate').value = today;
 }
 
+// Funzione helper per aggiornare la visualizzazione delle stelle
+function updateStarDisplay(ratingType, value) {
+    const stars = document.querySelectorAll(`[data-rating="${ratingType}"] i`);
+    stars.forEach((star, index) => {
+        if (index < value) {
+            star.classList.add('active');
+            star.style.color = 'var(--gold)';
+        } else {
+            star.classList.remove('active');
+            star.style.color = 'var(--gray-medium)';
+        }
+    });
+}
+
 // UI Management
 function showPage(pageName) {
     // Hide all pages
     elements.dashboardPage.classList.add('hidden');
     elements.addBeerPage.classList.add('hidden');
+    elements.editBeerPage.classList.add('hidden');
+    elements.filteredBeersPage.classList.add('hidden');
     elements.beerDetailPage.classList.add('hidden');
     
     // Remove active class from all nav buttons
@@ -673,6 +767,12 @@ function showPage(pageName) {
             elements.addBeerPage.classList.remove('hidden');
             elements.addBeerBtn.classList.add('active');
             resetAddBeerForm();
+            break;
+        case 'editBeer':
+            elements.editBeerPage.classList.remove('hidden');
+            break;
+        case 'filteredBeers':
+            elements.filteredBeersPage.classList.remove('hidden');
             break;
         case 'beerDetail':
             elements.beerDetailPage.classList.remove('hidden');
@@ -784,3 +884,5 @@ window.showPage = showPage;
 window.showBeerDetail = showBeerDetail;
 window.showDeleteModal = showDeleteModal;
 window.hideDeleteModal = hideDeleteModal;
+window.showFilteredBeers = showFilteredBeers;
+window.editBeer = editBeer;

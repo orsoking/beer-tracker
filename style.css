@@ -637,10 +637,155 @@ body {
     text-decoration: underline;
 }
 
-/* Main App */
-.main-app {
-    padding-top: 20px;
-    min-height: calc(100vh - 80px);
+/* Main Add Button */
+.main-add-section {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 20px;
+}
+
+.btn-large {
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 600;
+    min-width: 250px;
+}
+
+/* Clickable stats */
+.stat-card.clickable {
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.stat-card.clickable:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-hover);
+    border: 2px solid var(--gold);
+}
+
+/* Location input group */
+.location-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.location-input-group input {
+    flex: 1;
+}
+
+.btn-icon {
+    min-width: auto;
+    width: 48px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Single rating group for simplified rating */
+.single-rating-group {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.large-stars {
+    gap: 8px;
+}
+
+.large-stars i {
+    font-size: 32px;
+    transition: var(--transition);
+}
+
+/* Mobile responsive adjustments */
+.mobile-single-column {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    
+    .mobile-single-column {
+        width: 100%;
+    }
+    
+    .location-input-group {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .btn-icon {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .main-add-section {
+        padding: 16px;
+    }
+    
+    .btn-large {
+        width: 100%;
+        min-width: auto;
+        font-size: 16px;
+        padding: 16px 24px;
+    }
+    
+    .large-stars i {
+        font-size: 28px;
+    }
+}
+
+/* File input improvements for mobile camera */
+input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px dashed var(--gray-medium);
+    border-radius: var(--radius);
+    background: var(--gray-light);
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+input[type="file"]:hover {
+    border-color: var(--gold);
+    background: var(--cream);
+}
+
+/* Page transitions */
+.page {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Filtered page specific styles */
+#filteredBeersPage .page-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+#filteredBeersPage .page-header h2 {
+    margin: 0;
+    color: var(--brown);
+}
+
+@media (max-width: 768px) {
+    #filteredBeersPage .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+    
+    #filteredBeersPage .page-header .btn {
+        align-self: flex-start;
+    }
 }
 
 .page {

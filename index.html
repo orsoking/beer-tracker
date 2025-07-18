@@ -27,7 +27,7 @@
             <nav class="nav-menu">
                 <button id="dashboardBtn" class="nav-btn active">
                     <i class="fas fa-home"></i>
-                    <span>Dashboard</span>
+                    <span>Home</span>
                 </button>
                 <button id="addBeerBtn" class="nav-btn">
                     <i class="fas fa-plus"></i>
@@ -47,7 +47,8 @@
             <div class="auth-header">
                 <i class="fas fa-beer"></i>
                 <h1>Beer Tracker</h1>
-                <p>Il tuo registro birre personale</p>
+                <p><strong>Esplora. Annota. Ricorda.</strong></p>
+                <p>Mappa il tuo viaggio nel mondo della birra.</p>
             </div>
 
             <!-- Form di Login -->
@@ -74,7 +75,7 @@
                 <h2>Registrati</h2>
                 <form id="registerFormElement">
                     <div class="form-group">
-                        <label for="registerFullName">Nome completo</label>
+                        <label for="registerFullName">Nome</label>
                         <input type="text" id="registerFullName" required>
                     </div>
                     <div class="form-group">
@@ -100,17 +101,20 @@
 
     <!-- Main App -->
     <main id="mainApp" class="main-app hidden">
-        <!-- Dashboard -->
+        <!-- Home Page -->
         <div id="dashboardPage" class="page">
             <div class="container">
-                <div class="welcome-section">
-                    <h2>Benvenuto, <span id="userName"></span>!</h2>
-                    <p>Ecco le tue statistiche sulle birre</p>
+                <!-- Pulsante Aggiungi principale -->
+                <div class="main-add-section">
+                    <button class="btn btn-primary btn-large" onclick="showPage('addBeer')">
+                        <i class="fas fa-plus"></i>
+                        Aggiungi nuova birra
+                    </button>
                 </div>
 
-                <!-- Statistiche -->
+                <!-- Statistiche cliccabili -->
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card clickable" onclick="showFilteredBeers('all')">
                         <div class="stat-icon">
                             <i class="fas fa-beer"></i>
                         </div>
@@ -119,7 +123,7 @@
                             <p>Birre Bevute</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card clickable" onclick="showFilteredBeers('rating')">
                         <div class="stat-icon">
                             <i class="fas fa-star"></i>
                         </div>
@@ -128,7 +132,7 @@
                             <p>Voto Medio</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card clickable" onclick="showFilteredBeers('style')">
                         <div class="stat-icon">
                             <i class="fas fa-heart"></i>
                         </div>
@@ -137,23 +141,35 @@
                             <p>Stile Preferito</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card clickable" onclick="showFilteredBeers('brewery')">
                         <div class="stat-icon">
-                            <i class="fas fa-euro-sign"></i>
+                            <i class="fas fa-industry"></i>
                         </div>
                         <div class="stat-content">
-                            <h3 id="totalSpent">€0</h3>
-                            <p>Speso Totale</p>
+                            <h3 id="favoriteBrewery">-</h3>
+                            <p>Birrificio Preferito</p>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Lista Birre -->
+        <!-- Pagina Liste Filtrate -->
+        <div id="filteredBeersPage" class="page hidden">
+            <div class="container">
+                <div class="page-header">
+                    <button class="btn btn-secondary" onclick="showPage('dashboard')">
+                        <i class="fas fa-arrow-left"></i>
+                        Torna alla Home
+                    </button>
+                    <h2 id="filteredPageTitle">Lista Birre</h2>
+                </div>
+
                 <div class="beers-section">
                     <div class="section-header">
-                        <h3>Le tue birre</h3>
+                        <h3 id="filteredSectionTitle">Le tue birre</h3>
                         <div class="filters">
-                            <select id="styleFilter">
+                            <select id="filteredStyleFilter">
                                 <option value="">Tutti gli stili</option>
                                 <option value="IPA">IPA</option>
                                 <option value="Lager">Lager</option>
@@ -167,7 +183,7 @@
                                 <option value="Weizen">Weizen</option>
                                 <option value="Altro">Altro</option>
                             </select>
-                            <select id="sortBy">
+                            <select id="filteredSortBy">
                                 <option value="created_at">Data aggiunta</option>
                                 <option value="consumption_date">Data consumo</option>
                                 <option value="rating_overall">Voto</option>
@@ -175,8 +191,8 @@
                             </select>
                         </div>
                     </div>
-                    <div id="beersList" class="beers-grid">
-                        <!-- Le birre verranno inserite qui dinamicamente -->
+                    <div id="filteredBeersList" class="beers-grid">
+                        <!-- Le birre filtrate verranno inserite qui dinamicamente -->
                     </div>
                 </div>
             </div>
@@ -233,74 +249,40 @@
                         </div>
                         <div class="form-group">
                             <label for="beerLocation">Luogo</label>
-                            <input type="text" id="beerLocation" placeholder="Es: Pub O'Malley's, Roma">
+                            <div class="location-input-group">
+                                <input type="text" id="beerLocation" placeholder="Es: Pub O'Malley's, Roma">
+                                <button type="button" id="locationMapBtn" class="btn btn-secondary btn-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="beerPrice">Prezzo (€)</label>
-                            <input type="number" id="beerPrice" min="0" step="0.01" placeholder="Es: 5.50">
-                        </div>
-                        <div class="form-group">
-                            <label for="beerPhoto">Foto</label>
-                            <input type="file" id="beerPhoto" accept="image/*">
+                    <div class="form-group mobile-single-column">
+                        <label for="beerPhoto">Foto</label>
+                        <input type="file" id="beerPhoto" accept="image/*" capture="environment">
+                    </div>
+
+                    <!-- Valutazione semplificata -->
+                    <div class="ratings-section">
+                        <h3>Valutazione complessiva</h3>
+                        <p style="text-align: center; color: var(--gray-dark); margin-bottom: 20px;">
+                            Clicca sulle stelle per valutare (1-5 stelle)
+                        </p>
+                        <div class="single-rating-group">
+                            <div class="star-rating large-stars" data-rating="rating_overall">
+                                <i class="fas fa-star" data-value="1"></i>
+                                <i class="fas fa-star" data-value="2"></i>
+                                <i class="fas fa-star" data-value="3"></i>
+                                <i class="fas fa-star" data-value="4"></i>
+                                <i class="fas fa-star" data-value="5"></i>
+                            </div>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label for="beerNotes">Note</label>
                         <textarea id="beerNotes" rows="3" placeholder="Descrivi il sapore, l'aroma, l'occasione..."></textarea>
-                    </div>
-
-                    <!-- Valutazioni -->
-                    <div class="ratings-section">
-                        <h3>Valutazioni</h3>
-                        <p style="text-align: center; color: var(--gray-dark); margin-bottom: 20px;">
-                            Clicca sulle stelle per valutare (1-5 stelle)
-                        </p>
-                        <div class="rating-groups">
-                            <div class="rating-group">
-                                <label>Aspetto</label>
-                                <div class="star-rating" data-rating="rating_appearance">
-                                    <i class="fas fa-star" data-value="1"></i>
-                                    <i class="fas fa-star" data-value="2"></i>
-                                    <i class="fas fa-star" data-value="3"></i>
-                                    <i class="fas fa-star" data-value="4"></i>
-                                    <i class="fas fa-star" data-value="5"></i>
-                                </div>
-                            </div>
-                            <div class="rating-group">
-                                <label>Aroma</label>
-                                <div class="star-rating" data-rating="rating_aroma">
-                                    <i class="fas fa-star" data-value="1"></i>
-                                    <i class="fas fa-star" data-value="2"></i>
-                                    <i class="fas fa-star" data-value="3"></i>
-                                    <i class="fas fa-star" data-value="4"></i>
-                                    <i class="fas fa-star" data-value="5"></i>
-                                </div>
-                            </div>
-                            <div class="rating-group">
-                                <label>Sapore</label>
-                                <div class="star-rating" data-rating="rating_taste">
-                                    <i class="fas fa-star" data-value="1"></i>
-                                    <i class="fas fa-star" data-value="2"></i>
-                                    <i class="fas fa-star" data-value="3"></i>
-                                    <i class="fas fa-star" data-value="4"></i>
-                                    <i class="fas fa-star" data-value="5"></i>
-                                </div>
-                            </div>
-                            <div class="rating-group">
-                                <label>Bevibilità</label>
-                                <div class="star-rating" data-rating="rating_drinkability">
-                                    <i class="fas fa-star" data-value="1"></i>
-                                    <i class="fas fa-star" data-value="2"></i>
-                                    <i class="fas fa-star" data-value="3"></i>
-                                    <i class="fas fa-star" data-value="4"></i>
-                                    <i class="fas fa-star" data-value="5"></i>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="form-actions">
@@ -311,6 +293,109 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-plus"></i>
                             Aggiungi birra
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Pagina Modifica Birra -->
+        <div id="editBeerPage" class="page hidden">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Modifica birra</h2>
+                    <p>Aggiorna le informazioni della tua birra</p>
+                </div>
+
+                <form id="editBeerForm" class="beer-form">
+                    <input type="hidden" id="editBeerId">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editBeerName">Nome birra *</label>
+                            <input type="text" id="editBeerName" required placeholder="Es: Guinness Draught">
+                        </div>
+                        <div class="form-group">
+                            <label for="editBeerBrewery">Birrificio *</label>
+                            <input type="text" id="editBeerBrewery" required placeholder="Es: Guinness">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editBeerStyle">Stile *</label>
+                            <select id="editBeerStyle" required>
+                                <option value="">Seleziona stile</option>
+                                <option value="IPA">IPA (India Pale Ale)</option>
+                                <option value="Lager">Lager</option>
+                                <option value="Stout">Stout</option>
+                                <option value="Pilsner">Pilsner</option>
+                                <option value="Wheat">Wheat Beer</option>
+                                <option value="Porter">Porter</option>
+                                <option value="Pale Ale">Pale Ale</option>
+                                <option value="Saison">Saison</option>
+                                <option value="Tripel">Tripel</option>
+                                <option value="Weizen">Weizen</option>
+                                <option value="Altro">Altro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editBeerAlcohol">Gradazione (%)</label>
+                            <input type="number" id="editBeerAlcohol" min="0" max="20" step="0.1" placeholder="Es: 4.2">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editBeerDate">Data consumo</label>
+                            <input type="date" id="editBeerDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="editBeerLocation">Luogo</label>
+                            <div class="location-input-group">
+                                <input type="text" id="editBeerLocation" placeholder="Es: Pub O'Malley's, Roma">
+                                <button type="button" id="editLocationMapBtn" class="btn btn-secondary btn-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mobile-single-column">
+                        <label for="editBeerPhoto">Foto</label>
+                        <input type="file" id="editBeerPhoto" accept="image/*" capture="environment">
+                    </div>
+
+                    <!-- Valutazione semplificata -->
+                    <div class="ratings-section">
+                        <h3>Valutazione complessiva</h3>
+                        <p style="text-align: center; color: var(--gray-dark); margin-bottom: 20px;">
+                            Clicca sulle stelle per valutare (1-5 stelle)
+                        </p>
+                        <div class="single-rating-group">
+                            <div class="star-rating large-stars" data-rating="edit_rating_overall">
+                                <i class="fas fa-star" data-value="1"></i>
+                                <i class="fas fa-star" data-value="2"></i>
+                                <i class="fas fa-star" data-value="3"></i>
+                                <i class="fas fa-star" data-value="4"></i>
+                                <i class="fas fa-star" data-value="5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editBeerNotes">Note</label>
+                        <textarea id="editBeerNotes" rows="3" placeholder="Descrivi il sapore, l'aroma, l'occasione..."></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="cancelEditBeer" class="btn btn-secondary">
+                            <i class="fas fa-times"></i>
+                            Annulla
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Salva modifiche
                         </button>
                     </div>
                 </form>
@@ -357,8 +442,7 @@
     <footer style="text-align: center; padding: 40px 20px; color: var(--gray-dark); background: var(--white); margin-top: 40px;">
         <p>🍺 Beer Tracker - Creato con passione per gli amanti della birra</p>
         <p style="font-size: 14px; margin-top: 8px;">
-            Bevi responsabilmente • 
-            <a href="https://github.com/tuousername/beer-tracker" style="color: var(--brown);">GitHub</a>
+            Bevi responsabilmente
         </p>
     </footer>
 

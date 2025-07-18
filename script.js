@@ -78,7 +78,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Inizializzazione dell'applicazione
 async function initApp() {
     try {
-        // Controlla se l'utente è già loggato
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session && session.user) {
@@ -158,13 +157,7 @@ function setupStarRatings() {
                 ratings[ratingType] = value;
                 
                 // Aggiorna visualizzazione stelle
-                stars.forEach((s, i) => {
-                    if (i < value) {
-                        s.classList.add('active');
-                    } else {
-                        s.classList.remove('active');
-                    }
-                });
+                updateStarDisplay(ratingType, value);
             });
             
             star.addEventListener('mouseenter', () => {
@@ -179,14 +172,8 @@ function setupStarRatings() {
         });
         
         rating.addEventListener('mouseleave', () => {
-            const currentRating = ratings[ratingType];
-            stars.forEach((s, i) => {
-                if (i < currentRating) {
-                    s.style.color = 'var(--gold)';
-                } else {
-                    s.style.color = 'var(--gray-medium)';
-                }
-            });
+            const currentRating = ratings[ratingType] || 0;
+            updateStarDisplay(ratingType, currentRating);
         });
     });
 }
@@ -239,21 +226,6 @@ async function handleRegister(e) {
         
         if (error) throw error;
         
-        // Crea il profilo utente
-        if (data.user) {
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert([
-                    {
-                        id: data.user.id,
-                        username: username,
-                        full_name: fullName
-                    }
-                ]);
-            
-            if (profileError) throw profileError;
-        }
-        
         showToast('Registrazione completata! Controlla la tua email per confermare l\'account.', 'success');
         showLoginForm();
         
@@ -293,7 +265,6 @@ async function loadUserProfile() {
         if (error && error.code !== 'PGRST116') throw error;
         
         // Non mostriamo più il nome utente nella home
-        // La home è ora più pulita senza il messaggio di benvenuto
         
     } catch (error) {
         console.error('Errore caricamento profilo:', error);
@@ -410,6 +381,8 @@ function resetEditMode() {
         star.style.color = 'var(--gray-medium)';
     });
 }
+
+async function loadBeers() {
     if (!currentUser) return;
     
     try {
@@ -423,29 +396,91 @@ function resetEditMode() {
         
         currentBeers = data || [];
         updateStatistics();
-        filterAndSortBeers();
         
     } catch (error) {
         console.error('Errore caricamento birre:', error);
         showToast('Errore durante il caricamento delle birre', 'error');
         currentBeers = [];
         updateStatistics();
-        renderBeers([]);
     }
 }
 
-function filterAndSortBeers() {
+// Gestione liste filtrate
+function showFilteredBeers(filterType) {
+    currentFilterType = filterType;
     let filteredBeers = [...currentBeers];
+    let pageTitle = '';
+    let sectionTitle = '';
     
-    // Filtro per stile
-    const styleFilter = elements.styleFilter.value;
-    if (styleFilter) {
-        filteredBeers = filteredBeers.filter(beer => beer.style === styleFilter);
+    switch (filterType) {
+        case 'all':
+            pageTitle = 'Tutte le birre';
+            sectionTitle = 'Le tue birre in ordine alfabetico';
+            filteredBeers.sort((a, b) => a.name.localeCompare(b.name));
+            break;
+            
+        case 'rating':
+            pageTitle = 'Birre per voto';
+            sectionTitle = 'Le tue birre ordinate per voto';
+            filteredBeers.sort((a, b) => (b.rating_overall || 0) - (a.rating_overall || 0));
+            break;
+            
+        case 'style':
+            const favoriteStyle = elements.favoriteStyle.textContent;
+            if (favoriteStyle !== '-') {
+                filteredBeers = filteredBeers.filter(beer => beer.style === favoriteStyle);
+            }
+            pageTitle = `Birre ${favoriteStyle}`;
+            sectionTitle = `Le tue birre ${favoriteStyle}`;
+            filteredBeers.sort((a, b) => (b.rating_overall || 0) - (a.rating_overall || 0));
+            break;
+            
+        case 'brewery':
+            const favoriteBrewery = elements.favoriteBrewery.textContent;
+            if (favoriteBrewery !== '-') {
+                filteredBeers = filteredBeers.filter(beer => beer.brewery === favoriteBrewery);
+            }
+            pageTitle = `Birre ${favoriteBrewery}`;
+            sectionTitle = `Le tue birre di ${favoriteBrewery}`;
+            filteredBeers.sort((a, b) => (b.rating_overall || 0) - (a.rating_overall || 0));
+            break;
     }
     
-    // Ordinamento
-    const sortBy = elements.sortBy.value;
-    filteredBeers.sort((a, b) => {
+    elements.filteredPageTitle.textContent = pageTitle;
+    elements.filteredSectionTitle.textContent = sectionTitle;
+    
+    renderFilteredBeers(filteredBeers);
+    showPage('filteredBeers');
+}
+
+function filterAndSortFilteredBeers() {
+    let baseBeers = [...currentBeers];
+    
+    // Applica il filtro base
+    switch (currentFilterType) {
+        case 'style':
+            const favoriteStyle = elements.favoriteStyle.textContent;
+            if (favoriteStyle !== '-') {
+                baseBeers = baseBeers.filter(beer => beer.style === favoriteStyle);
+            }
+            break;
+        case 'brewery':
+            const favoriteBrewery = elements.favoriteBrewery.textContent;
+            if (favoriteBrewery !== '-') {
+                baseBeers = baseBeers.filter(beer => beer.brewery === favoriteBrewery);
+            }
+            break;
+    }
+    
+    // Applica filtro per stile
+    const styleFilter = elements.filteredStyleFilter.value;
+    if (styleFilter) {
+        baseBeers = baseBeers.filter(beer => beer.style === styleFilter);
+    }
+    
+    // Applica ordinamento
+    const sortBy = elements.filteredSortBy.value;
+    baseBeers.sort((a, b) => {
         switch (sortBy) {
             case 'created_at':
                 return new Date(b.created_at) - new Date(a.created_at);
@@ -463,26 +498,26 @@ function filterAndSortBeers() {
         }
     });
     
-    renderBeers(filteredBeers);
+    renderFilteredBeers(baseBeers);
 }
 
-function renderBeers(beers) {
+function renderFilteredBeers(beers) {
     if (beers.length === 0) {
-        elements.beersList.innerHTML = `
+        elements.filteredBeersList.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-beer"></i>
                 <h3>Nessuna birra trovata</h3>
-                <p>Inizia ad aggiungere le tue birre preferite!</p>
+                <p>Prova a modificare i filtri o aggiungi nuove birre!</p>
                 <button class="btn btn-primary" onclick="showPage('addBeer')">
                     <i class="fas fa-plus"></i>
-                    Aggiungi la prima birra
+                    Aggiungi birra
                 </button>
             </div>
         `;
         return;
     }
     
-    elements.beersList.innerHTML = beers.map(beer => `
+    elements.filteredBeersList.innerHTML = beers.map(beer => `
         <div class="beer-card" onclick="showBeerDetail('${beer.id}')">
             <div class="beer-card-header">
                 <div class="beer-card-info">
@@ -555,6 +590,10 @@ async function showBeerDetail(beerId) {
                     <i class="fas fa-arrow-left"></i>
                     Indietro
                 </button>
+                <button class="btn btn-primary" onclick="editBeer('${beer.id}')">
+                    <i class="fas fa-edit"></i>
+                    Modifica
+                </button>
                 <button class="btn btn-danger" onclick="showDeleteModal('${beer.id}')">
                     <i class="fas fa-trash"></i>
                     Elimina
@@ -578,54 +617,12 @@ async function showBeerDetail(beerId) {
                             <span class="detail-value">${beer.location}</span>
                         </div>
                     ` : ''}
-                    ${beer.price ? `
-                        <div class="detail-item">
-                            <span class="detail-label">Prezzo:</span>
-                            <span class="detail-value">€${beer.price.toFixed(2)}</span>
-                        </div>
-                    ` : ''}
                 </div>
             </div>
             
             <div class="detail-section">
-                <h3>Valutazioni</h3>
+                <h3>Valutazione</h3>
                 <div class="detail-grid">
-                    ${beer.rating_appearance ? `
-                        <div class="detail-item">
-                            <span class="detail-label">Aspetto:</span>
-                            <div class="rating-display">
-                                <span class="stars">${generateStars(beer.rating_appearance)}</span>
-                                <span class="rating-text">${beer.rating_appearance}/5</span>
-                            </div>
-                        </div>
-                    ` : ''}
-                    ${beer.rating_aroma ? `
-                        <div class="detail-item">
-                            <span class="detail-label">Aroma:</span>
-                            <div class="rating-display">
-                                <span class="stars">${generateStars(beer.rating_aroma)}</span>
-                                <span class="rating-text">${beer.rating_aroma}/5</span>
-                            </div>
-                        </div>
-                    ` : ''}
-                    ${beer.rating_taste ? `
-                        <div class="detail-item">
-                            <span class="detail-label">Sapore:</span>
-                            <div class="rating-display">
-                                <span class="stars">${generateStars(beer.rating_taste)}</span>
-                                <span class="rating-text">${beer.rating_taste}/5</span>
-                            </div>
-                        </div>
-                    ` : ''}
-                    ${beer.rating_drinkability ? `
-                        <div class="detail-item">
-                            <span class="detail-label">Bevibilità:</span>
-                            <div class="rating-display">
-                                <span class="stars">${generateStars(beer.rating_drinkability)}</span>
-                                <span class="rating-text">${beer.rating_drinkability}/5</span>
-                            </div>
-                        </div>
-                    ` : ''}
                     <div class="detail-item">
                         <span class="detail-label"><strong>Voto Complessivo:</strong></span>
                         <div class="rating-display">

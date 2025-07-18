@@ -1,8 +1,8 @@
 // Configurazione Supabase
 // IMPORTANTE: Sostituisci questi valori con quelli del tuo progetto Supabase
 
-const supabaseUrl = 'https://TUO_PROGETTO.supabase.co';
-const supabaseKey = 'TUA_CHIAVE_ANON_PUBLIC_KEY';
+const supabaseUrl = 'https://ghwvdbqaswxizbbupxpb.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdod3ZkYnFhc3d4aXpiYnVweHBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4MzI1MTYsImV4cCI6MjA2ODQwODUxNn0.BIkvKeemkclCo4QGoBUShW1WwcZb30VVTaO-ENiulhc';
 
 // ⚠️  ISTRUZIONI SETUP:
 // 1. Vai su https://supabase.com/dashboard

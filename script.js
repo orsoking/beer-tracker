@@ -309,52 +309,85 @@ async function handleAddBeer(e) {
 // Gestione modifica birra
 async function editBeer(beerId) {
     const beer = currentBeers.find(b => b.id === beerId);
-    if (!beer) return;
+    if (!beer) {
+        showToast('Birra non trovata', 'error');
+        return;
+    }
+    
+    if (!currentUser) {
+        showToast('Effettua il login per modificare', 'error');
+        return;
+    }
     
     isEditMode = true;
     editingBeerId = beerId;
     
-    // Popola il form di modifica
-    document.getElementById('editBeerId').value = beer.id;
-    document.getElementById('editBeerName').value = beer.name || '';
-    document.getElementById('editBeerBrewery').value = beer.brewery || '';
-    document.getElementById('editBeerStyle').value = beer.style || '';
-    document.getElementById('editBeerAlcohol').value = beer.alcohol_percentage || '';
-    document.getElementById('editBeerDate').value = beer.consumption_date || '';
-    document.getElementById('editBeerLocation').value = beer.location || '';
-    document.getElementById('editBeerNotes').value = beer.notes || '';
-    
-    // Imposta la valutazione
-    ratings.edit_rating_overall = beer.rating_overall || 0;
-    updateStarDisplay('edit_rating_overall', ratings.edit_rating_overall);
-    
-    showPage('editBeer');
+    // Popola il form di modifica con controlli di sicurezza
+    try {
+        document.getElementById('editBeerId').value = beer.id;
+        document.getElementById('editBeerName').value = beer.name || '';
+        document.getElementById('editBeerBrewery').value = beer.brewery || '';
+        document.getElementById('editBeerStyle').value = beer.style || '';
+        document.getElementById('editBeerAlcohol').value = beer.alcohol_percentage || '';
+        document.getElementById('editBeerDate').value = beer.consumption_date || '';
+        document.getElementById('editBeerLocation').value = beer.location || '';
+        document.getElementById('editBeerNotes').value = beer.notes || '';
+        
+        // Imposta la valutazione
+        ratings.edit_rating_overall = beer.rating_overall || 0;
+        updateStarDisplay('edit_rating_overall', ratings.edit_rating_overall);
+        
+        showPage('editBeer');
+        
+    } catch (error) {
+        console.error('Errore popolamento form:', error);
+        showToast('Errore nel caricamento del form', 'error');
+    }
 }
 
 async function handleEditBeer(e) {
     e.preventDefault();
     
-    if (!editingBeerId) return;
-    
-    const formData = {
-        name: document.getElementById('editBeerName').value,
-        brewery: document.getElementById('editBeerBrewery').value,
-        style: document.getElementById('editBeerStyle').value,
-        alcohol_percentage: parseFloat(document.getElementById('editBeerAlcohol').value) || null,
-        consumption_date: document.getElementById('editBeerDate').value || null,
-        location: document.getElementById('editBeerLocation').value || null,
-        notes: document.getElementById('editBeerNotes').value || null,
-        rating_overall: ratings.edit_rating_overall || null
-    };
+    if (!editingBeerId) {
+        showToast('Errore: ID birra mancante', 'error');
+        return;
+    }
     
     try {
+        const formData = {
+            name: document.getElementById('editBeerName').value.trim(),
+            brewery: document.getElementById('editBeerBrewery').value.trim(),
+            style: document.getElementById('editBeerStyle').value,
+            alcohol_percentage: parseFloat(document.getElementById('editBeerAlcohol').value) || null,
+            consumption_date: document.getElementById('editBeerDate').value || null,
+            location: document.getElementById('editBeerLocation').value?.trim() || null,
+            notes: document.getElementById('editBeerNotes').value?.trim() || null,
+            rating_overall: ratings.edit_rating_overall || null
+        };
+        
+        // Validazione base
+        if (!formData.name || !formData.brewery || !formData.style) {
+            showToast('Compila i campi obbligatori (Nome, Birrificio, Stile)', 'warning');
+            return;
+        }
+        
+        console.log('Aggiornamento birra:', editingBeerId, formData);
+        
         const { data, error } = await supabase
             .from('beers')
             .update(formData)
             .eq('id', editingBeerId)
+            .eq('user_id', currentUser.id) // Sicurezza extra
             .select();
         
-        if (error) throw error;
+        if (error) {
+            console.error('Errore Supabase:', error);
+            throw error;
+        }
+        
+        if (!data || data.length === 0) {
+            throw new Error('Nessuna birra aggiornata - verifica permessi');
+        }
         
         showToast('Birra modificata con successo!', 'success');
         resetEditMode();
@@ -363,7 +396,19 @@ async function handleEditBeer(e) {
         
     } catch (error) {
         console.error('Errore modifica birra:', error);
-        showToast('Errore durante la modifica della birra', 'error');
+        
+        // Messaggi di errore più specifici
+        let errorMessage = 'Errore durante la modifica della birra';
+        
+        if (error.message?.includes('permission')) {
+            errorMessage = 'Non hai i permessi per modificare questa birra';
+        } else if (error.message?.includes('not found')) {
+            errorMessage = 'Birra non trovata';
+        } else if (error.code === 'PGRST301') {
+            errorMessage = 'Errore di autenticazione - riprova il login';
+        }
+        
+        showToast(errorMessage, 'error');
     }
 }
 

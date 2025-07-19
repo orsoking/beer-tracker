@@ -29,6 +29,7 @@ const elements = {
     showLogin: document.getElementById('showLogin'),
     
     // Navigation
+    navBrand: document.querySelector('.nav-brand'),
     hamburgerBtn: document.getElementById('hamburgerBtn'),
     dropdownMenu: document.getElementById('dropdownMenu'),
     logoutBtn: document.getElementById('logoutBtn'),
@@ -114,6 +115,7 @@ function setupEventListeners() {
     elements.registerFormElement.addEventListener('submit', handleRegister);
     
     // Navigation event listeners
+    elements.navBrand.addEventListener('click', () => showPage('dashboard'));
     elements.hamburgerBtn.addEventListener('click', toggleDropdownMenu);
     elements.logoutBtn.addEventListener('click', handleLogout);
     elements.helpBtn.addEventListener('click', handleHelp);

@@ -29,8 +29,10 @@ const elements = {
     showLogin: document.getElementById('showLogin'),
     
     // Navigation
-    dashboardBtn: document.getElementById('dashboardBtn'),
+    hamburgerBtn: document.getElementById('hamburgerBtn'),
+    dropdownMenu: document.getElementById('dropdownMenu'),
     logoutBtn: document.getElementById('logoutBtn'),
+    helpBtn: document.getElementById('helpBtn'),
     
     // Pages
     dashboardPage: document.getElementById('dashboardPage'),
@@ -112,8 +114,16 @@ function setupEventListeners() {
     elements.registerFormElement.addEventListener('submit', handleRegister);
     
     // Navigation event listeners
-    elements.dashboardBtn.addEventListener('click', () => showPage('dashboard'));
+    elements.hamburgerBtn.addEventListener('click', toggleDropdownMenu);
     elements.logoutBtn.addEventListener('click', handleLogout);
+    elements.helpBtn.addEventListener('click', handleHelp);
+    
+    // Chiudi dropdown quando si clicca fuori
+    document.addEventListener('click', (e) => {
+        if (!elements.hamburgerBtn.contains(e.target) && !elements.dropdownMenu.contains(e.target)) {
+            elements.dropdownMenu.classList.add('hidden');
+        }
+    });
     
     // Form event listeners
     elements.addBeerForm.addEventListener('submit', handleAddBeer);
@@ -231,6 +241,16 @@ async function handleRegister(e) {
         console.error('Errore registrazione:', error);
         showToast(error.message, 'error');
     }
+}
+
+// Gestione menu hamburger
+function toggleDropdownMenu() {
+    elements.dropdownMenu.classList.toggle('hidden');
+}
+
+function handleHelp() {
+    elements.dropdownMenu.classList.add('hidden');
+    showToast('Grazie per il tuo interesse! Contattaci per suggerimenti e feedback.', 'info');
 }
 
 async function handleLogout() {
@@ -805,13 +825,12 @@ function showPage(pageName) {
     // Show selected page and activate nav button
     switch (pageName) {
         case 'dashboard':
+            // Non serve più attivare pulsanti nell'header
             elements.dashboardPage.classList.remove('hidden');
-            elements.dashboardBtn.classList.add('active');
             loadBeers();
             break;
         case 'addBeer':
             elements.addBeerPage.classList.remove('hidden');
-            // Non c'è più pulsante addBeer nell'header
             resetAddBeerForm();
             break;
         case 'editBeer':

@@ -13,6 +13,9 @@ let ratings = {
     edit_rating_overall: 0
 };
 
+// PWA Variables
+let deferredPrompt;
+
 // Elementi DOM
 const elements = {
     loading: document.getElementById('loading'),
@@ -32,6 +35,7 @@ const elements = {
     navBrand: document.querySelector('.nav-brand'),
     hamburgerBtn: document.getElementById('hamburgerBtn'),
     dropdownMenu: document.getElementById('dropdownMenu'),
+    installBtn: document.getElementById('installBtn'),
     logoutBtn: document.getElementById('logoutBtn'),
     helpBtn: document.getElementById('helpBtn'),
     
@@ -75,6 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initApp();
     setupEventListeners();
     setupStarRatings();
+    initializePWA();
 });
 
 // Inizializzazione dell'applicazione
@@ -120,12 +125,10 @@ function setupEventListeners() {
     elements.logoutBtn.addEventListener('click', handleLogout);
     elements.helpBtn.addEventListener('click', handleHelp);
     
-    // Chiudi dropdown quando si clicca fuori
-    document.addEventListener('click', (e) => {
-        if (!elements.hamburgerBtn.contains(e.target) && !elements.dropdownMenu.contains(e.target)) {
-            elements.dropdownMenu.classList.add('hidden');
-        }
-    });
+    // PWA Install button
+    if (elements.installBtn) {
+        elements.installBtn.addEventListener('click', handleInstallClick);
+    }
     
     // Form event listeners
     elements.addBeerForm.addEventListener('submit', handleAddBeer);
@@ -141,6 +144,13 @@ function setupEventListeners() {
     // Modal event listeners
     elements.cancelDelete.addEventListener('click', hideDeleteModal);
     elements.confirmDelete.addEventListener('click', handleDeleteBeer);
+    
+    // Chiudi dropdown quando si clicca fuori
+    document.addEventListener('click', (e) => {
+        if (!elements.hamburgerBtn.contains(e.target) && !elements.dropdownMenu.contains(e.target)) {
+            elements.dropdownMenu.classList.add('hidden');
+        }
+    });
     
     // Auth state change listener
     supabase.auth.onAuthStateChange((event, session) => {
@@ -165,15 +175,13 @@ function setupStarRatings() {
             star.addEventListener('click', () => {
                 const value = index + 1;
                 ratings[ratingType] = value;
-                
-                // Aggiorna visualizzazione stelle
                 updateStarDisplay(ratingType, value);
             });
             
             star.addEventListener('mouseenter', () => {
                 stars.forEach((s, i) => {
                     if (i <= index) {
-                        s.style.color = 'var(--gold)';
+                        s.style.color = 'var(--beer-gold)';
                     } else {
                         s.style.color = 'var(--gray-medium)';
                     }
@@ -284,8 +292,6 @@ async function loadUserProfile() {
         
         if (error && error.code !== 'PGRST116') throw error;
         
-        // Non mostriamo più il nome utente nella home
-        
     } catch (error) {
         console.error('Errore caricamento profilo:', error);
     }
@@ -303,23 +309,17 @@ async function handleAddBeer(e) {
         consumption_date: document.getElementById('beerDate').value || null,
         location: document.getElementById('beerLocation').value || null,
         notes: document.getElementById('beerNotes').value || null,
-        // SOLO per aggiunta - proviamo con rating singolo
         rating_overall: ratings.rating_overall || null,
         user_id: currentUser.id
     };
     
     try {
-        console.log('Aggiunta birra:', formData);
-        
         const { data, error } = await supabase
             .from('beers')
             .insert([formData])
             .select();
         
-        if (error) {
-            console.error('Errore aggiunta:', error);
-            throw error;
-        }
+        if (error) throw error;
         
         showToast('Birra aggiunta con successo!', 'success');
         resetAddBeerForm();
@@ -328,7 +328,6 @@ async function handleAddBeer(e) {
         
     } catch (error) {
         console.error('Errore aggiunta birra:', error);
-        console.error('Dettagli:', JSON.stringify(error, null, 2));
         showToast('Errore durante l\'aggiunta della birra', 'error');
     }
 }
@@ -336,71 +335,42 @@ async function handleAddBeer(e) {
 // Gestione modifica birra
 async function editBeer(beerId) {
     const beer = currentBeers.find(b => b.id === beerId);
-    if (!beer) {
-        showToast('Birra non trovata', 'error');
-        return;
-    }
-    
-    if (!currentUser) {
-        showToast('Effettua il login per modificare', 'error');
-        return;
-    }
+    if (!beer) return;
     
     isEditMode = true;
     editingBeerId = beerId;
     
-    // Popola il form di modifica con controlli di sicurezza
-    try {
-        document.getElementById('editBeerId').value = beer.id;
-        document.getElementById('editBeerName').value = beer.name || '';
-        document.getElementById('editBeerBrewery').value = beer.brewery || '';
-        document.getElementById('editBeerStyle').value = beer.style || '';
-        document.getElementById('editBeerAlcohol').value = beer.alcohol_percentage || '';
-        document.getElementById('editBeerDate').value = beer.consumption_date || '';
-        document.getElementById('editBeerLocation').value = beer.location || '';
-        document.getElementById('editBeerNotes').value = beer.notes || '';
-        
-        // Imposta la valutazione
-        ratings.edit_rating_overall = beer.rating_overall || 0;
-        updateStarDisplay('edit_rating_overall', ratings.edit_rating_overall);
-        
-        showPage('editBeer');
-        
-    } catch (error) {
-        console.error('Errore popolamento form:', error);
-        showToast('Errore nel caricamento del form', 'error');
-    }
+    document.getElementById('editBeerId').value = beer.id;
+    document.getElementById('editBeerName').value = beer.name || '';
+    document.getElementById('editBeerBrewery').value = beer.brewery || '';
+    document.getElementById('editBeerStyle').value = beer.style || '';
+    document.getElementById('editBeerAlcohol').value = beer.alcohol_percentage || '';
+    document.getElementById('editBeerDate').value = beer.consumption_date || '';
+    document.getElementById('editBeerLocation').value = beer.location || '';
+    document.getElementById('editBeerNotes').value = beer.notes || '';
+    
+    ratings.edit_rating_overall = beer.rating_overall || 0;
+    updateStarDisplay('edit_rating_overall', ratings.edit_rating_overall);
+    
+    showPage('editBeer');
 }
 
 async function handleEditBeer(e) {
     e.preventDefault();
     
-    if (!editingBeerId) {
-        showToast('Errore: ID birra mancante', 'error');
-        return;
-    }
+    if (!editingBeerId) return;
+    
+    const formData = {
+        name: document.getElementById('editBeerName').value.trim(),
+        brewery: document.getElementById('editBeerBrewery').value.trim(),
+        style: document.getElementById('editBeerStyle').value,
+        alcohol_percentage: parseFloat(document.getElementById('editBeerAlcohol').value) || null,
+        consumption_date: document.getElementById('editBeerDate').value || null,
+        location: document.getElementById('editBeerLocation').value?.trim() || null,
+        notes: document.getElementById('editBeerNotes').value?.trim() || null
+    };
     
     try {
-        // RIMUOVO rating_overall per evitare errore 400
-        const formData = {
-            name: document.getElementById('editBeerName').value.trim(),
-            brewery: document.getElementById('editBeerBrewery').value.trim(),
-            style: document.getElementById('editBeerStyle').value,
-            alcohol_percentage: parseFloat(document.getElementById('editBeerAlcohol').value) || null,
-            consumption_date: document.getElementById('editBeerDate').value || null,
-            location: document.getElementById('editBeerLocation').value?.trim() || null,
-            notes: document.getElementById('editBeerNotes').value?.trim() || null
-            // RIMOSSO: rating_overall - problema con colonna calcolata
-        };
-        
-        // Validazione base
-        if (!formData.name || !formData.brewery || !formData.style) {
-            showToast('Compila i campi obbligatori (Nome, Birrificio, Stile)', 'warning');
-            return;
-        }
-        
-        console.log('Aggiornamento birra senza rating:', editingBeerId, formData);
-        
         const { data, error } = await supabase
             .from('beers')
             .update(formData)
@@ -408,14 +378,7 @@ async function handleEditBeer(e) {
             .eq('user_id', currentUser.id)
             .select();
         
-        if (error) {
-            console.error('Errore Supabase dettagliato:', error);
-            throw error;
-        }
-        
-        if (!data || data.length === 0) {
-            throw new Error('Nessuna birra aggiornata - verifica permessi');
-        }
+        if (error) throw error;
         
         showToast('Birra modificata con successo!', 'success');
         resetEditMode();
@@ -423,18 +386,8 @@ async function handleEditBeer(e) {
         await loadBeers();
         
     } catch (error) {
-        console.error('Errore modifica birra completo:', error);
-        console.error('Dettagli errore:', JSON.stringify(error, null, 2));
-        
-        let errorMessage = 'Errore durante la modifica della birra';
-        
-        if (error.code === '42703') {
-            errorMessage = 'Errore schema database - contatta supporto';
-        } else if (error.message?.includes('permission')) {
-            errorMessage = 'Non hai i permessi per modificare questa birra';
-        }
-        
-        showToast(errorMessage, 'error');
+        console.error('Errore modifica birra:', error);
+        showToast('Errore durante la modifica della birra', 'error');
     }
 }
 
@@ -443,10 +396,8 @@ function resetEditMode() {
     editingBeerId = null;
     ratings.edit_rating_overall = 0;
     
-    // Reset del form
     document.getElementById('editBeerForm').reset();
     
-    // Reset stelle
     document.querySelectorAll('[data-rating="edit_rating_overall"] i').forEach(star => {
         star.classList.remove('active');
         star.style.color = 'var(--gray-medium)';
@@ -527,7 +478,6 @@ function showFilteredBeers(filterType) {
 function filterAndSortFilteredBeers() {
     let baseBeers = [...currentBeers];
     
-    // Applica il filtro base
     switch (currentFilterType) {
         case 'style':
             const favoriteStyle = elements.favoriteStyle.textContent;
@@ -543,13 +493,11 @@ function filterAndSortFilteredBeers() {
             break;
     }
     
-    // Applica filtro per stile
     const styleFilter = elements.filteredStyleFilter.value;
     if (styleFilter) {
         baseBeers = baseBeers.filter(beer => beer.style === styleFilter);
     }
     
-    // Applica ordinamento
     const sortBy = elements.filteredSortBy.value;
     baseBeers.sort((a, b) => {
         switch (sortBy) {
@@ -781,28 +729,23 @@ function formatDate(dateString) {
 
 function resetAddBeerForm() {
     elements.addBeerForm.reset();
-    
-    // Reset ratings
     ratings.rating_overall = 0;
     
-    // Reset star display
     document.querySelectorAll('[data-rating="rating_overall"] i').forEach(star => {
         star.classList.remove('active');
         star.style.color = 'var(--gray-medium)';
     });
     
-    // Set today's date
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('beerDate').value = today;
 }
 
-// Funzione helper per aggiornare la visualizzazione delle stelle
 function updateStarDisplay(ratingType, value) {
     const stars = document.querySelectorAll(`[data-rating="${ratingType}"] i`);
     stars.forEach((star, index) => {
         if (index < value) {
             star.classList.add('active');
-            star.style.color = 'var(--gold)';
+            star.style.color = 'var(--beer-gold)';
         } else {
             star.classList.remove('active');
             star.style.color = 'var(--gray-medium)';
@@ -812,22 +755,14 @@ function updateStarDisplay(ratingType, value) {
 
 // UI Management
 function showPage(pageName) {
-    // Hide all pages
     elements.dashboardPage.classList.add('hidden');
     elements.addBeerPage.classList.add('hidden');
     elements.editBeerPage.classList.add('hidden');
     elements.filteredBeersPage.classList.add('hidden');
     elements.beerDetailPage.classList.add('hidden');
     
-    // Remove active class from all nav buttons
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Show selected page and activate nav button
     switch (pageName) {
         case 'dashboard':
-            // Non serve più attivare pulsanti nell'header
             elements.dashboardPage.classList.remove('hidden');
             loadBeers();
             break;
@@ -889,10 +824,7 @@ function showToast(message, type = 'info') {
     const icon = toast.querySelector('.toast-icon');
     const messageElement = toast.querySelector('.toast-message');
     
-    // Set message
     messageElement.textContent = message;
-    
-    // Set icon and class based on type
     toast.className = `toast ${type}`;
     
     switch (type) {
@@ -909,11 +841,9 @@ function showToast(message, type = 'info') {
             icon.className = 'toast-icon fas fa-info-circle';
     }
     
-    // Show toast
     toast.classList.remove('hidden');
     toast.classList.add('show');
     
-    // Hide after 4 seconds
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => {
@@ -922,7 +852,161 @@ function showToast(message, type = 'info') {
     }, 4000);
 }
 
-// Error handling
+// ===========================================
+// PWA (Progressive Web App) Implementation
+// ===========================================
+
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+        try {
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('✅ PWA: Service Worker registered', registration.scope);
+            
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        showToast('Nuova versione disponibile! Ricarica per aggiornare.', 'info');
+                    }
+                });
+            });
+            
+        } catch (error) {
+            console.error('❌ PWA: Service Worker registration failed', error);
+        }
+    });
+}
+
+// PWA Install Prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('📱 PWA: Install prompt available');
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+    console.log('🎉 PWA: App installed successfully');
+    hideInstallButton();
+    showToast('Beer Tracker installato con successo!', 'success');
+    deferredPrompt = null;
+});
+
+function showInstallButton() {
+    const installMenuItem = document.getElementById('installBtn');
+    if (installMenuItem) {
+        installMenuItem.classList.remove('hidden');
+    } else {
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        if (dropdownMenu && !document.getElementById('installBtn')) {
+            const installItem = document.createElement('button');
+            installItem.id = 'installBtn';
+            installItem.className = 'dropdown-item';
+            installItem.innerHTML = `
+                <i class="fas fa-download"></i>
+                <span>Installa App</span>
+            `;
+            installItem.addEventListener('click', handleInstallClick);
+            
+            const helpBtn = document.getElementById('helpBtn');
+            dropdownMenu.insertBefore(installItem, helpBtn);
+        }
+    }
+}
+
+function hideInstallButton() {
+    const installMenuItem = document.getElementById('installBtn');
+    if (installMenuItem) {
+        installMenuItem.classList.add('hidden');
+    }
+}
+
+async function handleInstallClick() {
+    if (!deferredPrompt) {
+        showToast('Installazione non disponibile in questo browser', 'warning');
+        return;
+    }
+    
+    document.getElementById('dropdownMenu').classList.add('hidden');
+    
+    try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+            console.log('🎉 PWA: User accepted install');
+            showToast('Installazione in corso...', 'info');
+        } else {
+            console.log('❌ PWA: User dismissed install');
+            showToast('Installazione annullata', 'warning');
+        }
+        
+        deferredPrompt = null;
+        hideInstallButton();
+        
+    } catch (error) {
+        console.error('❌ PWA: Install error', error);
+        showToast('Errore durante l\'installazione', 'error');
+    }
+}
+
+function checkIfInstalled() {
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('📱 PWA: App running in standalone mode');
+        return true;
+    }
+    
+    if (window.navigator.standalone === true) {
+        console.log('📱 PWA: App running on iOS home screen');
+        return true;
+    }
+    
+    return false;
+}
+
+function initializePWA() {
+    const isInstalled = checkIfInstalled();
+    
+    if (isInstalled) {
+        console.log('📱 PWA: App is installed');
+        hideInstallButton();
+        
+        setTimeout(() => {
+            if (currentUser) {
+                showToast('Benvenuto nella versione installata di Beer Tracker!', 'success');
+            }
+        }, 2000);
+    } else {
+        console.log('📱 PWA: App is not installed');
+    }
+    
+    const existingInstallBtn = document.getElementById('installBtn');
+    if (existingInstallBtn) {
+        existingInstallBtn.addEventListener('click', handleInstallClick);
+    }
+}
+
+// Gestione offline/online status
+window.addEventListener('online', () => {
+    console.log('🌐 PWA: App is online');
+    showToast('Connessione ripristinata', 'success');
+});
+
+window.addEventListener('offline', () => {
+    console.log('📱 PWA: App is offline');
+    showToast('Modalità offline attiva', 'warning');
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+            registration.update();
+        });
+    }
+});
+
+// Error Handling
 window.addEventListener('error', (event) => {
     console.error('Errore JavaScript:', event.error);
     showToast('Si è verificato un errore inaspettato', 'error');
@@ -933,23 +1017,12 @@ window.addEventListener('unhandledrejection', (event) => {
     showToast('Errore di connessione', 'error');
 });
 
-// Service worker registration for PWA (optional)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-                console.log('SW registered: ', registration);
-            })
-            .catch((registrationError) => {
-                console.log('SW registration failed: ', registrationError);
-            });
-    });
-}
-
-// Export functions for global access
+// Export Functions for Global Access
 window.showPage = showPage;
 window.showBeerDetail = showBeerDetail;
 window.showDeleteModal = showDeleteModal;
 window.hideDeleteModal = hideDeleteModal;
 window.showFilteredBeers = showFilteredBeers;
 window.editBeer = editBeer;
+window.handleInstallClick = handleInstallClick;
+window.initializePWA = initializePWA;

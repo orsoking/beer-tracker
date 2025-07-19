@@ -4,8 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beer Tracker - Il tuo registro birre personale</title>
+    
+    <!-- Meta tags PWA -->
+    <meta name="description" content="Esplora. Annota. Ricorda. Mappa il tuo viaggio nel mondo della birra con Beer Tracker.">
+    <meta name="theme-color" content="#F4A853">
+    <meta name="background-color" content="#F8F9FA">
+    
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Beer Tracker">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png">
+    
+    <!-- Standard Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+    
+    <!-- Manifest PWA -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Preconnect per performance -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <!-- CSS -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -29,6 +58,10 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <div id="dropdownMenu" class="dropdown-menu hidden">
+                    <button id="installBtn" class="dropdown-item hidden">
+                        <i class="fas fa-download"></i>
+                        <span>Installa App</span>
+                    </button>
                     <button id="logoutBtn" class="dropdown-item">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Logout</span>

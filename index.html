@@ -20,7 +20,7 @@
     <!-- Header -->
     <header id="header" class="header hidden">
         <div class="container">
-            <div class="nav-brand">
+            <div class="nav-brand" onclick="showPage('dashboard')">
                 <i class="fas fa-beer"></i>
                 <h1>Beer Tracker</h1>
             </div>
@@ -440,14 +440,10 @@
     </div>
 
     <!-- Footer -->
-    <footer style="text-align: center; padding: 40px 20px; color: var(--gray-dark); background: var(--white); margin-top: 40px;">
-        <p>🍺 Beer Tracker</p>
-        <p style="font-size: 16px; margin-top: 8px; color: var(--deep-blue); font-weight: 500;">
-            In brewing we trust
-        </p>
-        <p style="font-size: 14px; margin-top: 16px;">
-            Bevi responsabilmente
-        </p>
+    <footer class="footer">
+        <p class="footer-title">🍺 Beer Tracker</p>
+        <p class="footer-motto">In brewing we trust</p>
+        <p class="footer-disclaimer">Bevi responsabilmente</p>
     </footer>
 
     <!-- Scripts -->

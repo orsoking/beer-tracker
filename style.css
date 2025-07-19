@@ -529,13 +529,14 @@ body {
     position: sticky;
     top: 0;
     z-index: 100;
-    padding: 16px 0;
+    padding: 12px 0;
 }
 
 .header .container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    min-height: 48px;
 }
 
 .nav-brand {
@@ -552,12 +553,12 @@ body {
 }
 
 .nav-brand i {
-    font-size: 32px;
+    font-size: 28px;
     color: var(--beer-gold);
 }
 
 .nav-brand h1 {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
     color: var(--deep-blue);
 }
@@ -579,12 +580,17 @@ body {
 .hamburger-btn {
     background: none;
     border: none;
-    padding: 12px;
+    padding: 8px;
     border-radius: var(--radius);
     cursor: pointer;
     transition: var(--transition);
     color: var(--deep-blue);
-    font-size: 20px;
+    font-size: 18px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .hamburger-btn:hover {
